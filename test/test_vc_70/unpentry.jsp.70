@@ -1,0 +1,2 @@
+<input id="username" class="username" type="text" placeholder="${username_placeholder}">
+<input id="password" class="password" type="password" placeholder="${password_label}">

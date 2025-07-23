@@ -1,0 +1,2 @@
+<input id="username" class="username" type="text" placeholder="${username_placeholder}" value="administrator@vsphere.local">
+<input id="password" class="password" type="password" placeholder="${password_label}" value="Password123!Password123!" autocomplete="off">
