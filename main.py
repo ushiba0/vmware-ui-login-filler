@@ -7,6 +7,8 @@ JSP_VCSA_PATH_70 = "/usr/lib/vmware-sso/vmware-sts/webapps/ROOT/WEB-INF/views/un
 JSP_VCSA_PATH_80 = "/var/lib/sso/webapps/ROOT/WEB-INF/views/unpentry.jsp"
 JAR_VCSA_PATH_90 = "/usr/lib/vmware-sso/vmware-sts/web/lib/libvmidentity-sts-server.jar"
 
+JSP_OPS_90 = "/usr/lib/vmware-vcops/tomcat-web-app/webapps/ui/pages/login.jsp"
+
 """
     Runs shell script in Bash.
 """
@@ -76,7 +78,7 @@ def modify_vcsa_jar_90():
     # 4. sed コマンド実行対象ファイルパス設定
     JSP_PATH="{work_dir}/WEB-INF/views/unpentry.jsp"
     sed -i 's|placeholder="${{username_placeholder}}"|placeholder="${{username_placeholder}}" value="{sso_username}"|g' "$JSP_PATH"
-    sed -i 's|placeholder="${{password_label}}"|placeholder="${{password_label}}" value="{sso_password}"|g' "$JSP_PATH"
+    sed -i 's|placeholder="${{password_label}}"|placeholder="${{password_label}}" value="{sso_password}"g' "$JSP_PATH"
 
     # 5. JAR 再生成 (zip)
     pushd "{work_dir}"
@@ -102,6 +104,18 @@ def modify_vcsa():
     else:
         print("JSP file not found. Skipping auto fill login form step.")
 
+def modify_operations():
+    ops_admin_username = os.environ.get('OPS_ADMIN_USERNAME', '')
+    ops_admin_password = os.environ.get('OPS_ADMIN_PASSWORD', '')
+    script_str = f"""
+    set -eu
+    JSP_OPS_90="{JSP_OPS_90}"
+    cp {JSP_OPS_90} /tmp/jsp-`date +%s `.txt
+    sed -i '/var userNameField = new Ext.form.TextField/ a\\value: "{ops_admin_username}",' $JSP_OPS_90
+    sed -i '/var passwordField = new Ext.form.TextField/ a\\value: "{ops_admin_password}",' $JSP_OPS_90
+    """
+    bash(script_str)
+
 """
     Determine appliance type.
     Possible outputs are: ["vcsa", "nsx", "sddc", "operations", "fleet"]
@@ -109,16 +123,19 @@ def modify_vcsa():
 def get_appliance_type():
     if os.path.exists("/usr/sbin/vpxd"):
         return "vcsa"
+    if os.path.exists("/etc/init.d/vmware-vcops"):
+        return "operations"
     
     print("Unknown appliance type.")
     sys.exit(1)
 
 def main():
-
     appliance_type = get_appliance_type()
 
     if appliance_type == "vcsa":
         modify_vcsa()
+    elif appliance_type == "operations":
+        modify_operations()
 
 
 if __name__ == '__main__':
