@@ -78,7 +78,7 @@ def modify_vcsa_jar_90():
     # 4. sed コマンド実行対象ファイルパス設定
     JSP_PATH="{work_dir}/WEB-INF/views/unpentry.jsp"
     sed -i 's|placeholder="${{username_placeholder}}"|placeholder="${{username_placeholder}}" value="{sso_username}"|g' "$JSP_PATH"
-    sed -i 's|placeholder="${{password_label}}"|placeholder="${{password_label}}" value="{sso_password}"g' "$JSP_PATH"
+    sed -i 's|placeholder="${{password_label}}"|placeholder="${{password_label}}" value="{sso_password}"|g' "$JSP_PATH"
 
     # 5. JAR 再生成 (zip)
     pushd "{work_dir}"
