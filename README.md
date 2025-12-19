@@ -3,9 +3,16 @@ This script edits unpentry.jsp to have the SSO administrator’s ID and password
 
 # Usage
 ```
-export SSO_USERNAME='administrator@vsphere.local'
-export SSO_PASSWORD='MyPassword'
+export VMWARE_USERNAME='administrator@vsphere.local'
+export VMWARE_PASSWORD='MyPassword'
 python main.py
+```
+
+# Running Tests
+```
+git clone https://github.com/ushiba0/vmware-ui-login-filler.git
+cd test
+bash run_test.sh
 ```
 
 # Importana Notes
