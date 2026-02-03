@@ -15,7 +15,7 @@ cd test
 bash run_test.sh
 ```
 
-# Importana Notes
+# Important Notes
 - **This script significantly increases security risks.**  
   By embedding administrator credentials directly into the login page, it exposes sensitive information that could be exploited by unauthorized users or malware.
 
