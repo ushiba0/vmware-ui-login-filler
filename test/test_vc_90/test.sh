@@ -7,9 +7,10 @@ mkdir -p /usr/sbin/
 touch /usr/sbin/vpxd
 
 ## Run main.py.
-VMWARE_USERNAME='administrator@vsphere.local' \
-VMWARE_PASSWORD='Password123!Password123!' \
-python3 /app/main.py
+export VMWARE_USERNAME='administrator@vsphere.local'
+export VMWARE_PASSWORD='Password123!Password123!'
+python3 /main.py
+python3 /main.py # Run twice to ensure the program runs correctly even if executed multiple times.
 
 main_py_status=$?
 if [ $main_py_status -ne 0 ]; then
@@ -25,11 +26,7 @@ unzip -q /usr/lib/vmware-sso/vmware-sts/web/lib/libvmidentity-sts-server.jar
 popd > /dev/null
 checksum_test=$(sha256sum $WORKDIR/test/WEB-INF/views/unpentry.jsp | awk '{print $1}')
 
-mkdir $WORKDIR/answer
-pushd $WORKDIR/answer > /dev/null
-unzip -q /app/libvmidentity-sts-server.jar.90.answer
-popd > /dev/null
-checksum_answer=$(sha256sum $WORKDIR/answer/WEB-INF/views/unpentry.jsp | awk '{print $1}')
+checksum_answer=$(sha256sum /app/jar.90.answer | awk '{print $1}')
 
 if [ "$checksum_test" = "$checksum_answer" ]; then
     echo "✅ Test SUCCESS [vCenter Server 9.0]: Checksums match."

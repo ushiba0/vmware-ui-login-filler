@@ -1,0 +1,3 @@
+<body>
+<script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {document.getElementById('username').value = "administrator@vsphere.local";document.getElementById('password').value = "Password123!Password123!";console.info("[vmware-ui-login-filler] Filled login form.");});</script>
+</body>

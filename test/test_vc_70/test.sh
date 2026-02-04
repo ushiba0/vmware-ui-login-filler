@@ -7,8 +7,8 @@ mkdir -p /usr/sbin/
 touch /usr/sbin/vpxd
 
 ## Run main.py.
-VMWARE_USERNAME='administrator@vsphere.local' \
-VMWARE_PASSWORD='Password123!Password123!' \
+export VMWARE_USERNAME='administrator@vsphere.local'
+export VMWARE_PASSWORD='Password123!Password123!'
 python3 /main.py
 python3 /main.py # Run twice to ensure the program runs correctly even if executed multiple times.
 

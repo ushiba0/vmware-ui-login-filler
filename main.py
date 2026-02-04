@@ -73,6 +73,18 @@ def bash(script_str = ""):
         sys.exit(1)
 
 
+def restart_sts_on_vc():
+    script_str = f"""
+    set -eu
+    if command -v vmon-cli &> /dev/null; then
+        echo "Restarting sts service..."
+        vmon-cli -r sts
+    else
+        echo "vmon-cli command not found. Skipping sts restart."
+    fi
+    """
+    bash(script_str)
+
 def modify_vcsa_jsp_70(vmware_username: str, vmware_password: str):
     script_str = f"""
     set -eu
@@ -112,36 +124,68 @@ def modify_vcsa_jsp_80(vmware_username: str, vmware_password: str):
 def modify_vcsa_jar_90(vmware_username: str, vmware_password: str):
     work_dir = "/var/tmp/workdir_script"
     backup_dir = "/var/tmp"
-    script_str = f"""
-    set -eu
 
-    # 1. バックアップ作成
-    cp -p "{JAR_VCSA_PATH_90}" "{backup_dir}"
+    # Expand .jar file under work_dir.
+    bash(f"""
+        set -eu
 
-    # 2. 作業ディレクトリ準備
-    rm -rf "{work_dir}"
-    mkdir -p "{work_dir}"
+        # 1. Create a backup at `backup_dir.`
+        cp -p "{JAR_VCSA_PATH_90}" "{backup_dir}"
 
-    # 3. JAR展開 (unzip)
-    unzip -q "{JAR_VCSA_PATH_90}" -d "{work_dir}"
+        # 2. Create a working directory at `work_dir.`
+        rm -rf "{work_dir}"
+        mkdir -p "{work_dir}"
 
-    # 4. sed コマンド実行対象ファイルパス設定
-    JSP_PATH="{work_dir}/WEB-INF/views/unpentry.jsp"
-    sed -i 's|placeholder="${{username_placeholder}}"|placeholder="${{username_placeholder}}" value="{vmware_username}"|g' "$JSP_PATH"
-    sed -i 's|placeholder="${{password_label}}"|placeholder="${{password_label}}" value="{vmware_password}"|g' "$JSP_PATH"
+        # 3. unzip .jar file at `work_dir.`
+        unzip -q "{JAR_VCSA_PATH_90}" -d "{work_dir}"
+    """)
 
-    # 5. JAR 再生成 (zip)
-    pushd "{work_dir}"
-    zip -qr libvmidentity-sts-server.jar ./*
-    popd
+    # Read all content from unpentry.jsp.
+    with open(f"{work_dir}/WEB-INF/views/unpentry.jsp", 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    
+    fill_script=f"""
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function() {{
+                document.getElementById('username').value = "{vmware_username}";
+                document.getElementById('password').value = "{vmware_password}";
+                console.info("[vmware-ui-login-filler] Filled login form.");
+            }});
+        </script>
+        """.replace('\n', '').replace('\r', '').replace('    ', '')
+    
+    # Append scripts before </body> tag.
+    new_lines = []
+    added_script = False
+    for line in lines:
+        if '</body>' in line and not added_script:
+            new_lines.append(fill_script)
+            new_lines.append('\n')
+            added_script = True
+        if 'vmware-ui-login-filler' in line:
+            logger.warning(f"The .jsp file has been already modified. Removing an old line...")
+            continue
+        new_lines.append(line)
+    
+    with open(f"{work_dir}/WEB-INF/views/unpentry.jsp", 'w', encoding='utf-8') as f:
+        f.writelines(new_lines)
+    
+    # Expand .jar file under work_dir.
+    bash(f"""
+        set -eu
+        
+        # 5. Generate a new .jar file.
+        pushd "{work_dir}"
+        zip -qr libvmidentity-sts-server.jar ./*
+        popd
 
-    # 6. 元の場所に配置（上書き）
-    TARGET_JAR="{work_dir}/libvmidentity-sts-server.jar"
-    cp -p "$TARGET_JAR" "{JAR_VCSA_PATH_90}"
+        # 6. Move .jar file to original location.
+        TARGET_JAR="{work_dir}/libvmidentity-sts-server.jar"
+        cp -p "$TARGET_JAR" "{JAR_VCSA_PATH_90}"
 
-    rm -rf "{work_dir}"
-    """
-    bash(script_str)
+        rm -rf "{work_dir}"
+    """)
+    
 
 
 def modify_vcsa(vmware_username: str, vmware_password: str):
@@ -196,9 +240,12 @@ def main():
 
     if appliance_type == "vcsa":
         modify_vcsa(vmware_username, vmware_password)
+        logger.info(f"Restarting sts service...")
+        restart_sts_on_vc()
     elif appliance_type == "operations":
         modify_operations()
 
+    logger.info(f"Done.")
 
 if __name__ == '__main__':
     setup_logger(False)
